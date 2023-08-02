@@ -2,8 +2,6 @@ const puppeteer = require('puppeteer')
 const admin = require('firebase-admin')
 const cron = require('node-cron');
 
-app.set('views', __dirname + '/views');
-
 cron.schedule('00 09 * * *', async () => {
   try{
     await bandScrapping()
@@ -22,8 +20,8 @@ const db = admin.database()
 const bandScrapping = async () => {
   try{
   const browser = await puppeteer.launch({
-    headless : 'new'
-    // headless: false
+    // headless : 'new'
+    headless: true
   })
 
   const page = await browser.newPage()
