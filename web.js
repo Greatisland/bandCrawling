@@ -20,8 +20,8 @@ const db = admin.database()
 const bandScrapping = async () => {
   try{
   const browser = await puppeteer.launch({
-    // headless : 'new'
-    headless: false
+    headless : 'new'
+    // headless: false
   })
 
   const page = await browser.newPage()
@@ -44,7 +44,7 @@ const bandScrapping = async () => {
   await page.waitForNavigation({ waitUntil: 'networkidle0' })
 
   // 로그인 처리
-  await page.waitForSelector('#content > section > div.homeMyBandList.gMat20.gPab35._myBandListWrap > div > ul > li:nth-child(2)', { visible: true, timeout: 10000 })
+  await page.waitForSelector('#content > section > div.homeMyBandList.gMat20.gPab35._myBandListWrap > div > ul > li:nth-child(2)', { visible: true, timeout: 100000 })
 
   console.log('로그인 성공')
 
@@ -161,9 +161,9 @@ const bandScrapping = async () => {
   console.log(`Data for schedule_${month} saved to Firebase.`)
 
   //아래쪽은 월간 반복을 위한 코드
-  //participants = [] // 다음 일정을 위해 참가자 배열 초기화
-  //await page.click(`#content > section > div.calendarViewWrap.gContentCardShadow > div:nth-child(1) > div.calendarHeader > div.month > button.prev._btnPrev`)
- // }
+  participants = [] // 다음 일정을 위해 참가자 배열 초기화
+  // await page.click(`#content > section > div.calendarViewWrap.gContentCardShadow > div:nth-child(1) > div.calendarHeader > div.month > button.prev._btnPrev`)
+//  }
 
 
   //데이터 가공
@@ -177,6 +177,20 @@ const bandScrapping = async () => {
   //브라우저 닫기
 }
 
+
+//백업 복원
+async function backUp () {
+  try {
+    const backup = await db.ref('backup').get()
+    const backupData = backup.val()
+    await db.ref('memberList').update(backupData)
+    console.log('백업복구했당..')
+  } catch {
+    console.log('흐엥 안됐당..')
+  }
+}
+
+
 //데이터 가공
 async function processFirebaseData () {
   try {
@@ -189,6 +203,8 @@ async function processFirebaseData () {
     const hostListData = hostList.val()
 
     let modifiedMemberList = memberListData
+    // let modifiedMemberList = {}
+
     // 데이터 가공 및 수정 작업
     let factoring = [{},{},{},{},{},{},{},{},{},{},{},{}]
     let factoringHost = [{},{},{},{},{},{},{},{},{},{},{},{}]
@@ -239,7 +255,14 @@ async function processFirebaseData () {
 
     // 이번달 확인
     const date = new Date()
+    const currentYear = date.getFullYear()
     const currentMonth = date.getMonth() + 1
+    
+    //이번달 기존 참여기록 초기화
+    Object.values(modifiedMemberList).forEach(member => {
+      member[`${currentMonth}month`] = 0
+    })
+
 
     //최종 데이터 바인딩
     //벙 참여
@@ -256,7 +279,18 @@ async function processFirebaseData () {
         modifiedMemberList[id][month] = count
       }
       if(!modifiedMemberList[id][`${currentMonth}month`] && !modifiedMemberList[id][`${currentMonth - 1}month`]){
-        modifiedMemberList[id]['danger'] = true
+        if(modifiedMemberList[id]['comeback']){
+          const comeDate = new Date(modifiedMemberList[id]['comeback'])
+          const comeYear = comeDate.getFullYear()
+          const comeMonth = comeDate.getMonth() + 1
+          if(currentYear === comeYear &&
+            (comeMonth === currentMonth || comeMonth + 1 === currentMonth)
+          ){
+            modifiedMemberList[id]['danger'] = false 
+          }else{
+            modifiedMemberList[id]['danger'] = true 
+          }
+        }
       }else{
         modifiedMemberList[id]['danger'] = false
       }
@@ -277,14 +311,14 @@ async function processFirebaseData () {
       }
     }
     // 수정된 데이터를 Firebase에 다시 저장
-    await db.ref('memberList').set(modifiedMemberList)
+    await db.ref('memberList').update(modifiedMemberList)
     // 백업 보관
-    await db.ref('backup').set(memberListData)
+    await db.ref('backup').update(memberListData)
     console.log('Data processed and updated in Firebase.')
   } catch (error) {
     console.error('An error occurred:', error)
   }
 }
-
+// backUp()
 bandScrapping()
 // processFirebaseData()
