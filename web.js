@@ -26,7 +26,7 @@ const bandScrapping = async () => {
 
   const page = await browser.newPage()
   const loginPage = 'https://auth.band.us/login_page?next_url=https%3A%2F%2Fband.us%2Fhome%3Freferrer%3Dhttps%253A%252F%252Fband.us%252F'
-  // 네이버 밴드 사이트 로그인 페이지로 이동
+  // 네이버 밴드 사이트 로그인 페이지로 이동하기!
   await page.goto(loginPage)
   console.log('Navigated to login page.')
   const ID = 'kinhyeonjin@naver.com'
