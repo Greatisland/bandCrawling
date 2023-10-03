@@ -12,8 +12,20 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "firebase-admin": "^11.9.0",
+    "chrome-aws-lambda": "^10.1.0",
+    "firebase-admin": "^11.10.1",
     "node-cron": "^3.0.2",
-    "puppeteer": "^5.5.0"
+    "puppeteer-core": "^10.1.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.10",
+    "@babel/preset-env": "^7.22.10",
+    "babel-loader": "^9.1.3",
+    "puppeteer": "^21.0.2",
+    "serverless": "^3.34.0",
+    "serverless-webpack": "^5.13.0",
+    "webpack": "^5.88.2",
+    "webpack-cli": "^5.1.4",
+    "webpack-node-externals": "^3.0.0"
   }
 }
