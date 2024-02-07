@@ -65,7 +65,7 @@ const bandScrapping = async () => {
   }
 
   //월간 반복
-  // for(month; month >= 1; month--){
+  for(month; month >= 1; month--){
   
   await page.waitForSelector('#content > section > div.scheduleList.gContentCardShadow > ul > li > span > a')
   const modals = await page.evaluate(() => {
@@ -162,15 +162,12 @@ const bandScrapping = async () => {
           const dataTargetType = (i) => `#wrap > div.layerContainerView > div > section > div > div:nth-child(1) > div > div > div.scheduleMain > div.scheduleRsvpArea > ul > li:nth-child(${i}) > label:nth-child(2) > span > strong`
           const elementType = document.querySelector(dataTargetType(k))
           if(
-            !elementType || 
-            elementType.textContent === '불참석' ||
-            elementType.textContent === '참석 대기' || 
-            elementType.textContent === '미정'
+            elementType && elementType.textContent === '불참석'
           ){
-            return null
+            const element = document.querySelector(getDataTarget(k))
+            return element.textContent ? element.textContent : null
           }
-          const element = document.querySelector(getDataTarget(k))
-          return element.textContent ? element.textContent : null
+          return null
         }, k)
 
         console.log(namesFind)
@@ -197,21 +194,21 @@ const bandScrapping = async () => {
   totalMeetData[targetYear][targetMonth] = meetData
 
   //아래쪽은 월간 반복을 위한 코드
-//   participants = [] // 다음 일정을 위해 참가자 배열 초기화
-//   await page.click(`#content > section > div.calendarViewWrap.gContentCardShadow > div:nth-child(1) > div.calendarHeader > div.month > button.prev._btnPrev`)
-//  }//월간 반복
+  participants = [] // 다음 일정을 위해 참가자 배열 초기화
+  await page.click(`#content > section > div.calendarViewWrap.gContentCardShadow > div:nth-child(1) > div.calendarHeader > div.month > button.prev._btnPrev`)
+ }//월간 반복
 
 
   // 파이어베이스에 결과를 저장
-  const meet = await db.ref(`meetData/${date.getFullYear()}`).get()
+  const meet = await db.ref(`party/${date.getFullYear()}`).get()
   const meetDB = meet.val()
   const updateData = {...meetDB, ...totalMeetData[date.getFullYear()]}
 
-  const refMeet = db.ref(`meetData/${date.getFullYear()}`)
+  const refMeet = db.ref(`party/${date.getFullYear()}`)
   await refMeet.update(updateData)
   console.log(`크롤링 끄읕`)
   //데이터 가공
-  await processFirebaseData()
+  // await processFirebaseData()
 
   //생일 찾기
   // await bandScrappingBirth(page)
@@ -344,6 +341,34 @@ async function bandScrappingBirth (page) {
 }
 */
 
+async function partySad () {
+  const meet = await db.ref('meetData').get()
+  const meetData = meet.val()
+
+  let userList = {}
+
+  Object.entries(meetData[2023]).forEach((monthData) => {
+    monthData[1].forEach(schedule => {
+      //참석자 확인
+      if(schedule.list){(schedule.list).split(',').forEach((name) => {
+        let trimname = name.trim()
+        userList[trimname] = userList[trimname] || {}
+        userList[trimname]['attend'] = userList[trimname]['attend'] || {}
+        userList[trimname]['attend'][monthData[0]] = (userList[trimname]['attend'][monthData[0]] || 0) + 1
+      })
+      }
+    })
+  })
+  const result = Object.entries(userList).map((user) => {
+    let name = user[0]
+    let info = user[1]
+
+    const acc = Object.values(info.attend).reduce((acc, val) => {return acc+val},0)
+    return [name, acc]
+  })
+  console.log(result)
+}
+
 //데이터 가공
 async function processFirebaseData () {
   try {
@@ -364,11 +389,7 @@ async function processFirebaseData () {
     const date = new Date()
     const currentYear = date.getFullYear();
     const currentMonth = date.getMonth() + 1;
-    let yearArray = []
-    for(let i=2017; i <= currentYear; i++){
-      yearArray.push(i)
-    }
-    yearArray.forEach(year => {
+    [2017, 2018, 2019, 2020, 2021, 2022, 2023].forEach(year => {
       Object.entries(meetData[year]).forEach((monthData) => {
         monthData[1].forEach(schedule => {
           //참석자 확인
@@ -622,5 +643,6 @@ async function processFirebaseData () {
   }
 }
 // backUp()
-bandScrapping()
+// bandScrapping()
 // processFirebaseData()
+partySad()
